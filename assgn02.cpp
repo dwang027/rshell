@@ -10,12 +10,12 @@ class Items
 {
 	public:
 	 Items(){};
-	 virtual void execute() = 0;
+	 virtual bool execute() = 0;
 };
 
 class Command: public Items
 {
-	private:
+	protected:
 	 string commandN;
 	 string arguementN;
 	public:
@@ -24,19 +24,84 @@ class Command: public Items
 		commandN = "none";
 		arguementN = "none";
 	 };
-	 Command(string comName; string argName)
+	 Command(string comName, string argName)
 	 {
 		commandN = comName;
 		arguementN = argName;
 	 }
-	 void set_aregument
-	 void execute()
+	 void set_command(string comName)
+	 {
+		commandN = comName;
+	 }
+	 bool execute()
 	 { /*finish this function, Huber*/ }
 };
 
 class Connector: public Items
 {
+	protected:
+	 Item* before;
+	public:
+	 Connector(){};
+	 virtual void set_before(Item* para) = 0;
+	 virtual bool execute() = 0;
 	
+};
+
+class Always: public Connector()
+{
+	public:
+	 Always(){};
+	 Always(Item* para)
+	 {
+		before = para;
+	 }
+	 void set_before(Item* para)
+	 {
+		before = para;
+	 }
+	 bool execute()
+	 {
+		//execute Before Item, then assess whether next item should
+		//execute. return true for yes, false for no
+	 }
+};
+
+class Succes: public Connector()
+{
+	public:
+	 Succes(){};
+	 Success(Item* para)
+	 {
+		before = para;
+	 }
+	 void set_before(Item* para)
+	 {
+		before = para;
+	 }
+	 bool execute()
+	 {
+		//same as above execute
+	 }
+};
+
+class Failure: public Connector()
+{
+	public:
+	 Failure(){};
+	 Failure(Item* para)
+	 {
+		before = para;
+	 }
+	 void set_before(Item* para)
+	 {
+		before = para;
+	 }
+	 bool execute()
+	 {
+		//figure it out
+	 }
+
 };
 
 int main()
