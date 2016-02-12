@@ -3,6 +3,11 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/type.h>
+#include <sys/wait.h>
+#pragma GCC disgnostic ignored "-Wwrite-strings"
 
 using namespace std;
 
@@ -16,22 +21,19 @@ class Items
 class Command: public Items
 {
 	protected:
-	 string commandN;
-	 string arguementN;
+	 char* command[];
 	public:
 	 Command()
 	 {
-		commandN = "none";
-		arguementN = "none";
+		
 	 };
-	 Command(string comName, string argName)
+	 Command(char* para[])
 	 {
-		commandN = comName;
-		arguementN = argName;
+		command[] = para[];
 	 }
-	 void set_command(string comName)
+	 void set_command(char* para[])
 	 {
-		commandN = comName;
+		command[] = para[];
 	 }
 	 bool execute()
 	 { /*finish this function, Huber*/ }
@@ -104,8 +106,15 @@ class Failure: public Connector()
 
 };
 
+
+
 int main()
 {
+	string commandLine;
+	while (commandLine != "exit")
+	{
+		
+	}
 	return 0;
 }
 
