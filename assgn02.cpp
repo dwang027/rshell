@@ -13,7 +13,7 @@
 
 using namespace std;
 
-/*class Items
+class Items
 {
 	public:
 	 Items(){};
@@ -23,44 +23,68 @@ using namespace std;
 class Command: public Items
 {
 	protected:
-	 char* command[];
+	 vector<string> command;
 	public:
-	 Command()
+	 Command(){};
+	 void set_command(vector<string> temp)
 	 {
-		
-	 };
-	 Command(char* para[])
-	 {
-		command[] = para[];
-	 }
-	 void set_command(char* para[])
-	 {
-		command[] = para[];
+		command = temp;
 	 }
 	 bool execute()
-	 { //finish this function, Huber }
+	 {
+
+		pid_t pid = getpid();
+		int status = 0;
+		bool exeRes = true;
+
+		pid = fork();
+
+		int size = command.size();
+		char* arr[size+1];
+		for ( int i = 0; i < size; ++i)
+		{
+			arr[i] = command.at(i);
+		}
+		arr[size] = NULL;
+		
+		if (pid == 0)
+		{
+			execvp(arr[0], arr);
+			_exit(EXIT_FAILURE);
+		}
+		else if (pid > 0)
+		{
+			wait(&status);
+		}
+		else { cout << "ERROR: FORK WAS UNSUCCESSFUL\n"; }
+
+		if (status == 0){exeRes = true;}
+		else {exeRes = false;}
+
+		return exeRes;
+	 }
 };
 
 class Connector: public Items
 {
 	protected:
-	 Item* before;
+	 Items* before;
 	public:
 	 Connector(){};
-	 virtual void set_before(Item* para) = 0;
+	 virtual void set_before(Items* para) = 0;
 	 virtual bool execute() = 0;
 	
 };
 
-class Always: public Connector()
+class Always: public Connector
 {
 	public:
 	 Always(){};
-	 Always(Item* para)
+	 Always(Items* para)
 	 {
 		before = para;
-	 }
-	 void set_before(Item* para)
+	 };
+	 void set_before(Items* para)
 	 {
 		before = para;
 	 }
@@ -71,69 +95,78 @@ class Always: public Connector()
 	 }
 };
 
-class Succes: public Connector()
+class Success: public Connector
 {
 	public:
-	 Succes(){};
-	 Success(Item* para)
+	 Success(){};
+	 Success(Items* para)
 	 {
 		before = para;
-	 }
-	 void set_before(Item* para)
+	 };
+	 void set_before(Items* para)
 	 {
 		before = para;
 	 }
 	 bool execute()
 	 {
-		//same as above execute
+		bool perNext;
+		perNext = before->execute();
+		return perNext;
 	 }
 };
 
-class Failure: public Connector()
+class Failure: public Connector
 {
 	public:
 	 Failure(){};
-	 Failure(Item* para)
+	 Failure(Items* para)
 	 {
 		before = para;
-	 }
-	 void set_before(Item* para)
+	 };
+	 void set_before(Items* para)
 	 {
 		before = para;
 	 }
 	 bool execute()
 	 {
-		//figure it out
+		bool perNext;
+		perNext = before->execute();
+		perNext = !perNext;
+		return perNext;
 	 }
 
-};*/
+};
 
-bool add_com(vector<string> &arr, string var)
+bool add_com(vector<string> &arr, string var, int &type)
 {
 	int last = var.size() - 1;
 	bool temp;
 	if (var == "||")
 	{
-		arr.push_back("Failure type");
+		type = 3;
 		temp = true;
 	}
 	else if (var == "&&")
 	{
-		arr.push_back("Success type");
+		type = 1;
 		temp = true;
 	}
 	else if (var.at(last) == ';')
 	{
 		string com = var.substr(0, last);
 		arr.push_back(com);
-		arr.push_back("Always type");
+		type = 0;
 		temp = true;
 	}
 	else if (var == "#")
 	{
-		arr.push_back("Rest Was Comment");
-		temp = true;
+		type = -1;
+		temp = false;
 	}
+	else if (type == -1)
+	{
+		temp = false;
+	}	
 	else 
 	{
 		arr.push_back(var);
@@ -158,24 +191,16 @@ int main()
 			vector< vector<string> > master;
 			for (istringstream tString1(commandLine); tString1 >> temp; )
 			{
-				
+				int type = 0;
 				bool detectCon = false;
 				vector<string> arr;
-				detectCon = add_com(arr, temp);
+				detectCon = add_com(arr, temp, type);
 				while (!detectCon)
 				{
 					tString1 >> temp;
-					detectCon = add_com(arr, temp);
+					detectCon = add_com(arr, temp, type);
 				}
 				master.push_back(arr);
-			}
-			for (int i = 0; i < master.size(); ++i)
-			{
-				for (int j = 0; j < master.at(i).size(); ++j)
-				{
-					cout << master.at(i).at(j) << ' ';
-				}
-				cout << endl;
 			}
 		}
 	}
