@@ -1,5 +1,5 @@
 name1=Diana Wang
 ucrnetid1=dwang027
 name2=Huber Ochoa
-ucrnetid=hocho002
+ucrnetid2=hocho002
 repourl=https://www.github.com/hocho002/rshell.git 
