@@ -15,7 +15,7 @@ int main()
 	
 	pid = fork();
 
-	char* args[] = {"ls", "-a", 0};
+	char* args[] = {"ls", "-l", 0};
 	
 	if (pid == 0)
 	{
@@ -34,6 +34,7 @@ int main()
 
 
 	cout << "Safely returned to main()\n";
+	cout << status << endl;
 
 	return 0;
 }

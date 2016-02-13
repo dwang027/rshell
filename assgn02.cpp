@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <sstream>
 #include <cstdlib>
@@ -43,7 +44,7 @@ class Command: public Items
 		char* arr[size+1];
 		for ( int i = 0; i < size; ++i)
 		{
-			arr[i] = command.at(i);
+			arr[i] = command.at(i).c_str();
 		}
 		arr[size] = NULL;
 		
@@ -137,13 +138,15 @@ class Failure: public Connector
 
 };
 
+
+
 bool add_com(vector<string> &arr, string var, int &type)
 {
 	int last = var.size() - 1;
 	bool temp;
 	if (var == "||")
 	{
-		type = 3;
+		type = 2;
 		temp = true;
 	}
 	else if (var == "&&")
@@ -188,19 +191,24 @@ int main()
 		if(commandLine != "exit")
 		{
 			string temp;
-			vector< vector<string> > master;
 			for (istringstream tString1(commandLine); tString1 >> temp; )
 			{
 				int type = 0;
 				bool detectCon = false;
 				vector<string> arr;
 				detectCon = add_com(arr, temp, type);
-				while (!detectCon)
+				while (!detectCon && !tString1.eof())
 				{
 					tString1 >> temp;
 					detectCon = add_com(arr, temp, type);
 				}
-				master.push_back(arr);
+				Items* complCom = new Command();
+				Items* complCon;
+				complCom->set_command(arr);
+				if (type == 0 || type == -1) {complCon = new Always();}
+				else if (type == 2) {complCon = new Failure();}
+				else if (type == 1) {complCon = new Success();}
+				complCon->set_before(complCom);
 			}
 		}
 	}
