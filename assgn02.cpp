@@ -138,7 +138,32 @@ class Failure: public Connector
 
 };
 
-
+class CommandList: public Items
+{
+	protected:
+	 vector<Items*> commLine;
+	public:
+	 CommandList(){};
+	 void add_com(Items* temp)
+	 {
+		commLine.push_back(temp);
+	 }
+	 bool execute()
+	 {
+		bool permission = true;
+		for (int i = 0; i < commLine.size(); ++i)
+		{
+			if (permission)
+			{
+				permission = commLine.at(i)->execute();
+			}
+			if (!permission)
+			{
+				permission = true;
+			}
+		}
+	 }
+};
 
 bool add_com(vector<string> &arr, string var, int &type)
 {
