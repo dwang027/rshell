@@ -14,6 +14,7 @@
 
 using namespace std;
 
+//base class
 class Items
 {
 	public:
@@ -37,12 +38,14 @@ class Command: public Items
 	 }
 	 bool execute()
 	 {
-
+		//getting process ID
 		pid_t pid = getpid();
 		int status = 0;
 		bool exeRes = true;
-
+		
 		int size = command.size();
+		
+		//starting to convert vector<string> to vector<char*> using const_char
 		vector<char*> arr;
 		for ( int i = 0; i < size; ++i)
 		{
@@ -50,15 +53,18 @@ class Command: public Items
 		}
 		arr.push_back(NULL);
 		char** comExec = &arr[0];
-
+		
+		//splits process into two, one parent one child
 		pid = fork();
 		
+		//if in child
 		if (pid == 0)
 		{
 			execvp(comExec[0], comExec);
 			perror("ERROR: EXECVP() FAILED UNEXPECTEDLY");
 			exit(1);
 		}
+		//if in parent, wait for child
 		else if (pid > 0)
 		{
 			wait(&status);
@@ -87,6 +93,7 @@ class Connector: public Items
 	
 };
 
+//semi-colon connector - ;
 class Always: public Connector
 {
 	public:
@@ -107,6 +114,7 @@ class Always: public Connector
 	 }
 };
 
+//and connector - &&
 class Success: public Connector
 {
 	public:
@@ -127,6 +135,7 @@ class Success: public Connector
 	 }
 };
 
+//or connector - ||
 class Failure: public Connector
 {
 	public:
@@ -148,16 +157,16 @@ class Failure: public Connector
 	 }
 
 };
-
+//composite
 class CommandList: public Items
 {
 	protected:
-	 vector<Items*> commLine;
+	 vector<Items*> commLine; //for user input
 	public:
 	 CommandList(){};
 	 void add_com(Items* temp)
 	 {
-		commLine.push_back(temp);
+		commLine.push_back(temp); //adds commands from user to vector
 	 }
 	 bool execute()
 	 {
