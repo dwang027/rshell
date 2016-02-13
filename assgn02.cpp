@@ -38,26 +38,32 @@ class Command: public Items
 		int status = 0;
 		bool exeRes = true;
 
-		pid = fork();
-
 		int size = command.size();
-		char* arr[size+1];
+		vector<char*> arr;
 		for ( int i = 0; i < size; ++i)
 		{
-			arr[i] = command.at(i).c_str();
+			arr.push_back(const_cast<char*>(command.at(i).c_str()));
 		}
-		arr[size] = NULL;
+		arr.push_back(NULL);
+		char** comExec = &arr[0];
+
+		pid = fork();
 		
 		if (pid == 0)
 		{
-			execvp(arr[0], arr);
-			_exit(EXIT_FAILURE);
+			execvp(comExec[0], comExec);
+			perror("ERROR: EXECVP() FAILED UNEXPECTEDLY");
+			exit(1);
 		}
 		else if (pid > 0)
 		{
 			wait(&status);
 		}
-		else { cout << "ERROR: FORK WAS UNSUCCESSFUL\n"; }
+		else 
+		{ 
+			cout << "ERROR: FORK WAS UNSUCCESSFUL\n";
+			exit(127); 
+		}
 
 		if (status == 0){exeRes = true;}
 		else {exeRes = false;}
@@ -234,6 +240,7 @@ int main()
 				else if (type == 2) {complCon = new Failure();}
 				else if (type == 1) {complCon = new Success();}
 				complCon->set_before(complCom);
+
 			}
 		}
 	}
