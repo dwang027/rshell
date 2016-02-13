@@ -18,7 +18,7 @@ class Items
 {
 	public:
 	 Items(){};
-	 virtual bool execute() = 0;
+	 virtual bool execute()=0;
 };
 
 class Command: public Items
@@ -27,6 +27,10 @@ class Command: public Items
 	 vector<string> command;
 	public:
 	 Command(){};
+	 Command(vector<string> temp)
+	 {
+		command = temp;
+	 }
 	 void set_command(vector<string> temp)
 	 {
 		command = temp;
@@ -97,8 +101,9 @@ class Always: public Connector
 	 }
 	 bool execute()
 	 {
-		//execute Before Item, then assess whether next item should
-		//execute. return true for yes, false for no
+		bool perNext;
+		perNext = before->execute();
+		return true;
 	 }
 };
 
@@ -221,6 +226,8 @@ int main()
 
 		if(commandLine != "exit")
 		{
+			bool awesome = true;
+			CommandList fullLine;
 			string temp;
 			for (istringstream tString1(commandLine); tString1 >> temp; )
 			{
@@ -233,15 +240,25 @@ int main()
 					tString1 >> temp;
 					detectCon = add_com(arr, temp, type);
 				}
-				Items* complCom = new Command();
-				Items* complCon;
-				complCom->set_command(arr);
-				if (type == 0 || type == -1) {complCon = new Always();}
-				else if (type == 2) {complCon = new Failure();}
-				else if (type == 1) {complCon = new Success();}
-				complCon->set_before(complCom);
-
+				Items* complCom = new Command(arr);
+				if (type == 0 || type == -1) 
+				{
+					Items* complCon = new Always(complCom);
+					fullLine.add_com(complCon);
+				}
+				else if (type == 2) 
+				{
+					Items* complCon = new Failure(complCom);
+					fullLine.add_com(complCon);
+				}
+				else if (type == 1) 
+				{
+					Items* complCon = new Success(complCom);
+					fullLine.add_com(complCon);
+				}
+				
 			}
+			awesome = fullLine.execute();
 		}
 	}
 	return 0;
