@@ -110,7 +110,7 @@ class Always: public Connector
 	 {
 		bool perNext;
 		perNext = before->execute();
-		return true;
+		return perNext;
 	 }
 };
 
@@ -152,8 +152,16 @@ class Failure: public Connector
 	 {
 		bool perNext;
 		perNext = before->execute();
-		perNext = !perNext;
-		return perNext;
+		if (perNext)
+		{
+			return false;
+		}
+		else 
+		{
+			return true;
+		}
+
+		return false;
 	 }
 
 };
@@ -177,7 +185,7 @@ class CommandList: public Items
 			{
 				permission = commLine.at(i)->execute();
 			}
-			if (!permission)
+			else
 			{
 				permission = true;
 			}
@@ -185,7 +193,7 @@ class CommandList: public Items
 	 }
 };
 
-bool add_com(vector<string> &arr, string var, int &type)
+bool parse_com(vector<string> &arr, string var, int &type)
 {
 	int last = var.size() - 1;
 	bool temp;
@@ -243,11 +251,11 @@ int main()
 				int type = 0;
 				bool detectCon = false;
 				vector<string> arr;
-				detectCon = add_com(arr, temp, type);
+				detectCon = parse_com(arr, temp, type);
 				while (!detectCon && !tString1.eof())
 				{
 					tString1 >> temp;
-					detectCon = add_com(arr, temp, type);
+					detectCon = parse_com(arr, temp, type);
 				}
 				Items* complCom = new Command(arr);
 				if (type == 0 || type == -1) 
