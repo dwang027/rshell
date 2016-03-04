@@ -152,8 +152,7 @@ class Failure: public Connector
 	 {
 		bool perNext;
 		perNext = before->execute();
-		perNext = !perNext;
-		return perNext;
+		return !perNext;
 	 }
 
 };
@@ -177,7 +176,7 @@ class CommandList: public Items
 			{
 				permission = commLine.at(i)->execute();
 			}
-			if (!permission)
+			else
 			{
 				permission = true;
 			}
