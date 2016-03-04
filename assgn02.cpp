@@ -152,16 +152,7 @@ class Failure: public Connector
 	 {
 		bool perNext;
 		perNext = before->execute();
-		if (perNext)
-		{
-			return false;
-		}
-		else 
-		{
-			return true;
-		}
-
-		return false;
+		return !perNext;
 	 }
 
 };
@@ -193,7 +184,7 @@ class CommandList: public Items
 	 }
 };
 
-bool parse_com(vector<string> &arr, string var, int &type)
+bool add_com(vector<string> &arr, string var, int &type, bool &testCase, int &testType)
 {
 	int last = var.size() - 1;
 	bool temp;
@@ -222,7 +213,23 @@ bool parse_com(vector<string> &arr, string var, int &type)
 	else if (type == -1)
 	{
 		temp = false;
-	}	
+	}
+	else if (var == "test" || var == "[" || var == "]")
+	{
+		testCase = true;
+	}
+	else if (var == "-e")
+	{
+		testType = 0;
+	}
+	else if (var == "-f")
+	{
+		testType = 1;
+	}
+	else if (var == "-d")
+	{
+		testType = 2;
+	}
 	else 
 	{
 		arr.push_back(var);
@@ -250,14 +257,32 @@ int main()
 			{
 				int type = 0;
 				bool detectCon = false;
+				bool testCase = false;
+				int testType = 0;
 				vector<string> arr;
-				detectCon = parse_com(arr, temp, type);
+				detectCon = add_com(arr, temp, type, testCase, testType);
 				while (!detectCon && !tString1.eof())
 				{
 					tString1 >> temp;
-					detectCon = parse_com(arr, temp, type);
+					detectCon = add_com(arr, temp, type, testCase, testType);
 				}
-				Items* complCom = new Command(arr);
+
+				Items* complCom;
+				if (testCase)
+				{
+					cout << "This test case is type " << testType << endl;
+					cout << arr.at(0) << endl;
+					type = 3;
+					// This is where a test object will be created. comlCom will be set equal to it 
+					// and it will be inserted to our commandline. In this case, I made type = 3, so my 
+					// code won't try and make a full command with a complCom that is incomplete. 
+					// testType indicates what type of "test" it will be, "-e, -f, or -d", and corresponds 
+					// to "0, 1, and 2" respectively.
+				}
+				else 
+				{
+					complCom = new Command(arr);
+				}
 				if (type == 0 || type == -1) 
 				{
 					Items* complCon = new Always(complCom);
