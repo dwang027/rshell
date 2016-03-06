@@ -88,12 +88,13 @@ class Connector: public Items
 	 Items* before;
 	public:
 	 Connector(){};
+	 virtual int truesNeeded() = 0;
 	 virtual void set_before(Items* para) = 0;
 	 virtual bool execute() = 0;
 	
 };
 
-//semi-colon connector - ;
+//Semi-colon connector - ;
 class Always: public Connector
 {
 	public:
@@ -102,6 +103,7 @@ class Always: public Connector
 	 {
 		before = para;
 	 };
+	 int truesNeeded() { return 0; }
 	 void set_before(Items* para)
 	 {
 		before = para;
@@ -114,7 +116,7 @@ class Always: public Connector
 	 }
 };
 
-//and connector - &&
+//And connector - &&
 class Success: public Connector
 {
 	public:
@@ -123,6 +125,7 @@ class Success: public Connector
 	 {
 		before = para;
 	 };
+	 int truesNeeded() { return 2; }
 	 void set_before(Items* para)
 	 {
 		before = para;
@@ -135,7 +138,7 @@ class Success: public Connector
 	 }
 };
 
-//or connector - ||
+//Or connector - ||
 class Failure: public Connector
 {
 	public:
@@ -144,6 +147,7 @@ class Failure: public Connector
 	 {
 		before = para;
 	 };
+	 int truesNeeded() { return 1; }
 	 void set_before(Items* para)
 	 {
 		before = para;
@@ -156,16 +160,18 @@ class Failure: public Connector
 	 }
 
 };
-//composite
+
+
+//Composite
 class CommandList: public Items
 {
 	protected:
-	 vector<Items*> commLine; //for user input
+	 vector<Items*> commLine; //For user input
 	public:
 	 CommandList(){};
 	 void add_com(Items* temp)
 	 {
-		commLine.push_back(temp); //adds commands from user to vector
+		commLine.push_back(temp); //Adds commands from user to vector
 	 }
 	 bool execute()
 	 {
@@ -184,7 +190,34 @@ class CommandList: public Items
 	 }
 };
 
-bool add_com(vector<string> &arr, string var, int &type, bool &testCase, int &testType)
+/*class Grouping: public Items
+{
+	protected:
+	 vector<Items*> comGroup;
+	public:
+	 Grouping(){};
+	 void add_com(Items* temp)
+	 {
+		comGroup.push_back(temp);
+	 }
+	 
+	 bool execute()
+	 {
+		int truesNeeded = comGroup.at(0)->truesNeeded();
+		bool permission = true;
+		for (int i = 0; i < commGroup.size(); ++i)
+		{
+			if (permission)
+			{
+				permission = comGroup.at(i)->execute();
+			}
+			else { permission = true; }
+		}
+	 }
+};*/
+
+/*This is where we interpret our user-input Command Line. aka We find out what we are dealing with*/
+bool interpret_line(vector<string> &arr, string var, int &type, bool &testCase, int &testType)
 {
 	int last = var.size() - 1;
 	bool temp;
@@ -210,26 +243,11 @@ bool add_com(vector<string> &arr, string var, int &type, bool &testCase, int &te
 		type = -1;
 		temp = false;
 	}
-	else if (type == -1)
-	{
-		temp = false;
-	}
-	else if (var == "test" || var == "[" || var == "]")
-	{
-		testCase = true;
-	}
-	else if (var == "-e")
-	{
-		testType = 0;
-	}
-	else if (var == "-f")
-	{
-		testType = 1;
-	}
-	else if (var == "-d")
-	{
-		testType = 2;
-	}
+	else if (type == -1) { temp = false; }
+	else if (var == "test" || var == "[" || var == "]") { testCase = true; }
+	else if (var == "-e") { testType = 0; }
+	else if (var == "-f") { testType = 1; }
+	else if (var == "-d") { testType = 2; }
 	else 
 	{
 		arr.push_back(var);
@@ -253,21 +271,23 @@ int main()
 			bool awesome = true;
 			CommandList fullLine;
 			string temp;
-			for (istringstream tString1(commandLine); tString1 >> temp; )
+			for (istringstream tString1(commandLine); tString1 >> temp; )//This is where the main parsing takes place
 			{
 				int type = 0;
 				bool detectCon = false;
 				bool testCase = false;
 				int testType = 0;
 				vector<string> arr;
-				detectCon = add_com(arr, temp, type, testCase, testType);
+				detectCon = interpret_line(arr, temp, type, testCase, testType);
 				while (!detectCon && !tString1.eof())
 				{
 					tString1 >> temp;
-					detectCon = add_com(arr, temp, type, testCase, testType);
+					detectCon = interpret_line(arr, temp, type, testCase, testType);
 				}
 
 				Items* complCom;
+				
+
 				if (testCase)
 				{
 					cout << "This test case is type " << testType << endl;
@@ -279,10 +299,9 @@ int main()
 					// testType indicates what type of "test" it will be, "-e, -f, or -d", and corresponds 
 					// to "0, 1, and 2" respectively.
 				}
-				else 
-				{
-					complCom = new Command(arr);
-				}
+				else { complCom = new Command(arr); }
+				
+
 				if (type == 0 || type == -1) 
 				{
 					Items* complCon = new Always(complCom);
