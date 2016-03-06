@@ -20,6 +20,68 @@ class Items
 	public:
 	 Items(){};
 	 virtual bool execute()=0;
+	 /*This is where we interpret our user-input Command Line. aka We find out what we are dealing with*/
+	 bool interpret_line(vector<string> &arr, string var, int &type, bool &testCase, int &testType, bool &grouping)
+	 {
+		int last = var.size() - 1;
+		bool temp;
+		if (var == "||")
+		{
+			type = 2;
+			temp = true;
+		}
+		else if (var == "&&")
+		{
+			type = 1;
+			temp = true;
+		}
+		else if (var.at(last) == ';')
+		{
+			string com = var.substr(0, last);
+			arr.push_back(com);
+			type = 0;
+			temp = true;
+		}
+		else if (var == "#")
+		{
+			type = -1;
+			temp = false;
+		}
+		else if (type == -1) { temp = false; }
+		else if (var == "test" || var == "[" || var == "]") 
+		{ 
+			testCase = true;
+			temp = false;
+		}
+		else if (var == "-e") 
+		{ 
+			testType = 0;
+			temp = false;
+		}
+		else if (var == "-f") 
+		{ 
+			testType = 1;
+			temp = false;
+		}
+		else if (var == "-d")
+		{
+			testType = 2;
+			temp = false;
+		}
+		else if ((var == "(" )||(var == ")"))
+		{
+			temp = false;
+			grouping = !grouping;
+		}
+		else 
+		{
+			arr.push_back(var);
+			temp = false;
+		}
+	
+		return temp;
+	 }
+
 };
 
 class Command: public Items
@@ -169,10 +231,68 @@ class CommandList: public Items
 	 vector<Items*> commLine; //For user input
 	public:
 	 CommandList(){};
+	 
 	 void add_com(Items* temp)
 	 {
 		commLine.push_back(temp); //Adds commands from user to vector
 	 }
+
+	 void parse_commLine(string commandLine)
+	 {
+		string temp;
+		bool grouping = false;
+		for (istringstream tString1(commandLine); tString1 >> temp; )//This is where the main parsing takes place
+		{
+			int type = 0;
+			bool detectCon = false;
+			bool testCase = false;
+			int testType = 0;
+			vector<string> arr;
+			detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
+			while (!detectCon && !tString1.eof())
+			{
+				tString1 >> temp;
+				detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
+			}
+
+			Items* complCom;
+				
+
+			if (testCase)
+			{
+				cout << "This test case is type " << testType << endl;
+				cout << arr.at(0) << endl;
+				type = 3;
+				// This is where a test object will be created. comlCom will be set equal to the object 
+				// and it will be inserted to our commandline. In this case, I made type = 3, so my 
+				// code won't try and make a full command with a complCom that is incomplete. In other circumstances,
+				// this will not be needed. testType indicates what type of "test" it will be, 
+				// "-e, -f, or -d", and corresponds to "0, 1, and 2" respectively.
+			}
+			else { complCom = new Command(arr); }
+				
+
+			if (type == 0 || type == -1) 
+			{
+				Items* complCon = new Always(complCom);
+				this->add_com(complCon);
+			}
+			else if (type == 2) 
+			{
+				Items* complCon = new Failure(complCom);
+				this->add_com(complCon);
+			}
+			else if (type == 1) 
+			{
+				Items* complCon = new Success(complCom);
+				this->add_com(complCon);
+			}
+		}
+		
+		return;
+
+	 }
+
 	 bool execute()
 	 {
 		bool permission = true;
@@ -187,6 +307,7 @@ class CommandList: public Items
 				permission = true;
 			}
 		}
+		return permission;
 	 }
 };
 
@@ -203,6 +324,7 @@ class CommandList: public Items
 	 
 	 bool execute()
 	 {
+		int truesSoFar = 0;
 		int truesNeeded = comGroup.at(0)->truesNeeded();
 		bool permission = true;
 		for (int i = 0; i < commGroup.size(); ++i)
@@ -212,50 +334,15 @@ class CommandList: public Items
 				permission = comGroup.at(i)->execute();
 			}
 			else { permission = true; }
+			if (permission) { truesSoFar += 1; }
 		}
+		
+		if (truesSoFar >= truesNeeded) { permission = true; }
+		else { permission = false; }
+
+		return permission;
 	 }
 };*/
-
-/*This is where we interpret our user-input Command Line. aka We find out what we are dealing with*/
-bool interpret_line(vector<string> &arr, string var, int &type, bool &testCase, int &testType)
-{
-	int last = var.size() - 1;
-	bool temp;
-	if (var == "||")
-	{
-		type = 2;
-		temp = true;
-	}
-	else if (var == "&&")
-	{
-		type = 1;
-		temp = true;
-	}
-	else if (var.at(last) == ';')
-	{
-		string com = var.substr(0, last);
-		arr.push_back(com);
-		type = 0;
-		temp = true;
-	}
-	else if (var == "#")
-	{
-		type = -1;
-		temp = false;
-	}
-	else if (type == -1) { temp = false; }
-	else if (var == "test" || var == "[" || var == "]") { testCase = true; }
-	else if (var == "-e") { testType = 0; }
-	else if (var == "-f") { testType = 1; }
-	else if (var == "-d") { testType = 2; }
-	else 
-	{
-		arr.push_back(var);
-		temp = false;
-	}
-	
-	return temp;
-}
 
 int main()
 {
@@ -270,55 +357,7 @@ int main()
 		{
 			bool awesome = true;
 			CommandList fullLine;
-			string temp;
-			for (istringstream tString1(commandLine); tString1 >> temp; )//This is where the main parsing takes place
-			{
-				int type = 0;
-				bool detectCon = false;
-				bool testCase = false;
-				int testType = 0;
-				vector<string> arr;
-				detectCon = interpret_line(arr, temp, type, testCase, testType);
-				while (!detectCon && !tString1.eof())
-				{
-					tString1 >> temp;
-					detectCon = interpret_line(arr, temp, type, testCase, testType);
-				}
-
-				Items* complCom;
-				
-
-				if (testCase)
-				{
-					cout << "This test case is type " << testType << endl;
-					cout << arr.at(0) << endl;
-					type = 3;
-					// This is where a test object will be created. comlCom will be set equal to it 
-					// and it will be inserted to our commandline. In this case, I made type = 3, so my 
-					// code won't try and make a full command with a complCom that is incomplete. 
-					// testType indicates what type of "test" it will be, "-e, -f, or -d", and corresponds 
-					// to "0, 1, and 2" respectively.
-				}
-				else { complCom = new Command(arr); }
-				
-
-				if (type == 0 || type == -1) 
-				{
-					Items* complCon = new Always(complCom);
-					fullLine.add_com(complCon);
-				}
-				else if (type == 2) 
-				{
-					Items* complCon = new Failure(complCom);
-					fullLine.add_com(complCon);
-				}
-				else if (type == 1) 
-				{
-					Items* complCon = new Success(complCom);
-					fullLine.add_com(complCon);
-				}
-				
-			}
+			fullLine.parse_commLine(commandLine);
 			awesome = fullLine.execute();
 		}
 	}
