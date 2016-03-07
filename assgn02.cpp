@@ -91,6 +91,61 @@ class Items
 
 };
 
+class Test: public Items
+{
+    private:
+     int flag;
+     string path;
+    
+    public:
+     Test(){};
+     Test(int f, string p)
+     {
+         flag = f;
+         path = p;
+     }
+     
+     bool execute()
+     {
+         struct stat checkFile;
+         int solution = stat(path.c_str(), &checkFile);
+         
+         if (flag == 0)
+         {
+             return solution;
+         }
+         else if (flag == 1)
+         {
+             //short hand if/else magic syntax
+             //if it is a regular file, return true, otherwise no bueno
+             if (S_ISREG(checkFile.st_mode)){
+                 cout << "(True)" << endl;
+                 return true;
+             }
+             else{
+                 cout << "(False)" << endl;
+                 return false;
+             }
+             
+         }
+         else if (flag == 2)
+         {
+             if(S_ISDIR(checkFile.st_mode)){
+                 cout << "(True)" << endl;
+                 return true;
+             }
+             else{
+                 cout << "(False)" << endl;
+                 return false;
+             }
+         }
+         else
+         {
+            cout << "WE HAVE A PROBLEM GUYS." << endl;    
+         }
+     }
+};
+
 class Command: public Items
 {
 	protected:
