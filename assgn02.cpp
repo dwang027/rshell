@@ -20,6 +20,7 @@ class Items
 	public:
 	 Items(){};
 	 virtual bool execute()=0;
+	 virtual int truesNeeded()=0;
 	 /*This is where we interpret our user-input Command Line. aka We find out what we are dealing with*/
 	 bool interpret_line(vector<string> &arr, string var, int &type, bool &testCase, int &testType, bool &grouping)
 	 {
@@ -68,11 +69,17 @@ class Items
 			testType = 2;
 			temp = false;
 		}
-		else if ((var == "(" )||(var == ")"))
+		else if (var == "(" )
 		{
 			temp = false;
-			grouping = !grouping;
+			grouping = true;
 		}
+		else if (var == ")")
+		{
+			temp = true;
+			type = 0;
+		}
+			
 		else 
 		{
 			arr.push_back(var);
@@ -90,6 +97,7 @@ class Command: public Items
 	 vector<string> command;
 	public:
 	 Command(){};
+	 int truesNeeded() {return 0;}
 	 Command(vector<string> temp)
 	 {
 		command = temp;
@@ -150,7 +158,6 @@ class Connector: public Items
 	 Items* before;
 	public:
 	 Connector(){};
-	 virtual int truesNeeded() = 0;
 	 virtual void set_before(Items* para) = 0;
 	 virtual bool execute() = 0;
 	
@@ -223,42 +230,53 @@ class Failure: public Connector
 
 };
 
-
-//Composite
-class CommandList: public Items
+class Grouping: public Items
 {
 	protected:
-	 vector<Items*> commLine; //For user input
+	 vector<Items*> comGroup;
 	public:
-	 CommandList(){};
-	 
+	 Grouping(){};
+	 int truesNeeded() { return 0; }
+
 	 void add_com(Items* temp)
 	 {
-		commLine.push_back(temp); //Adds commands from user to vector
+		comGroup.push_back(temp);
 	 }
 
-	 void parse_commLine(string commandLine)
+	 int size() { return comGroup.size(); }
+
+	 void parse(istringstream &inStream)
 	 {
 		string temp;
 		bool grouping = false;
-		for (istringstream tString1(commandLine); tString1 >> temp; )//This is where the main parsing takes place
+		bool pendingGroup = false;
+		while (!inStream.eof() )//This is where the main parsing takes place
 		{
+			Items* complCom;
 			int type = 0;
 			bool detectCon = false;
 			bool testCase = false;
 			int testType = 0;
 			vector<string> arr;
 			detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
-			while (!detectCon && !tString1.eof())
+			while (!detectCon && !inStream.eof() && !grouping)
 			{
-				tString1 >> temp;
+				inStream >> temp;
 				detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
+
+				if (grouping)
+				{
+					Grouping* groupUp;
+					groupUp->parse(inStream);
+					grouping = false;
+					pendingGroup = true;
+					type = 3;
+					complCom = groupUp;
+				}
+
 			}
 
-			Items* complCom;
-				
-
-			if (testCase)
+			if (testCase && !pendingGroup)
 			{
 				cout << "This test case is type " << testType << endl;
 				cout << arr.at(0) << endl;
@@ -269,7 +287,112 @@ class CommandList: public Items
 				// this will not be needed. testType indicates what type of "test" it will be, 
 				// "-e, -f, or -d", and corresponds to "0, 1, and 2" respectively.
 			}
-			else { complCom = new Command(arr); }
+			else if (!testCase && !pendingGroup){ complCom = new Command(arr); }
+				
+
+			if (type == 0 || type == -1) 
+			{
+				Items* complCon = new Always(complCom);
+				this->add_com(complCon);
+			}
+			else if (type == 2) 
+			{
+				Items* complCon = new Failure(complCom);
+				this->add_com(complCon);
+			}
+			else if (type == 1) 
+			{
+				Items* complCon = new Success(complCom);
+				this->add_com(complCon);
+			}
+
+			if (this->size() >= 2) { return;}
+		}
+		
+		return;
+
+	 }
+	 
+	 bool execute()
+	 {
+		int truesSoFar = 0;
+		int truesNeeded = comGroup.at(0)->truesNeeded();
+		bool permission = true;
+		for (int i = 0; i < comGroup.size(); ++i)
+		{
+			if (permission)
+			{
+				permission = comGroup.at(i)->execute();
+			}
+			else { permission = true; }
+			if (permission) { truesSoFar += 1; }
+		}
+		
+		if (truesSoFar >= truesNeeded) { permission = true; }
+		else { permission = false; }
+
+		return permission;
+	 }
+};
+
+
+//Composite
+class CommandList: public Items
+{
+	protected:
+	 vector<Items*> commLine; //For user input
+	public:
+	 CommandList(){};
+	 int truesNeeded() { return 0;}
+	 
+	 void add_com(Items* temp)
+	 {
+		commLine.push_back(temp); //Adds commands from user to vector
+	 }
+
+	 void parse_commLine(string commandLine)
+	 {
+		string temp;
+		bool grouping = false;
+		bool pendingGroup = false;
+		for (istringstream sStreamIn(commandLine); sStreamIn >> temp; )//This is where the main parsing takes place
+		{
+			Items* complCom;
+			int type = 0;
+			bool detectCon = false;
+			bool testCase = false;
+			int testType = 0;
+			vector<string> arr;
+			detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
+			while (!detectCon && !sStreamIn.eof() && !grouping)
+			{
+				sStreamIn >> temp;
+				detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
+
+			if (grouping)
+			{
+				Grouping* groupUp;
+				groupUp->parse(sStreamIn);
+				grouping = false;
+				pendingGroup = true;
+				type = 3;
+				complCom = groupUp;
+			}
+
+			}
+
+			if (testCase && !pendingGroup)
+			{
+				cout << "This test case is type " << testType << endl;
+				cout << arr.at(0) << endl;
+				type = 3;
+				// This is where a test object will be created. comlCom will be set equal to the object 
+				// and it will be inserted to our commandline. In this case, I made type = 3, so my 
+				// code won't try and make a full command with a complCom that is incomplete. In other circumstances,
+				// this will not be needed. testType indicates what type of "test" it will be, 
+				// "-e, -f, or -d", and corresponds to "0, 1, and 2" respectively.
+			}
+			else if (!testCase && !pendingGroup){ complCom = new Command(arr); }
 				
 
 			if (type == 0 || type == -1) 
@@ -310,39 +433,6 @@ class CommandList: public Items
 		return permission;
 	 }
 };
-
-/*class Grouping: public Items
-{
-	protected:
-	 vector<Items*> comGroup;
-	public:
-	 Grouping(){};
-	 void add_com(Items* temp)
-	 {
-		comGroup.push_back(temp);
-	 }
-	 
-	 bool execute()
-	 {
-		int truesSoFar = 0;
-		int truesNeeded = comGroup.at(0)->truesNeeded();
-		bool permission = true;
-		for (int i = 0; i < commGroup.size(); ++i)
-		{
-			if (permission)
-			{
-				permission = comGroup.at(i)->execute();
-			}
-			else { permission = true; }
-			if (permission) { truesSoFar += 1; }
-		}
-		
-		if (truesSoFar >= truesNeeded) { permission = true; }
-		else { permission = false; }
-
-		return permission;
-	 }
-};*/
 
 int main()
 {
