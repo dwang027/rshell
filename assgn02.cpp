@@ -362,9 +362,10 @@ class Grouping: public Items
 			}
 			else if (type == 1) 
 			{
-				cout << "poop" << endl;
+				cout << "beep" << endl;
 				Items* complCon = new Success(complCom);
 				cout << "pop" << endl;
+				cout << complCon->truesNeeded() << endl;
 				comGroup.push_back(complCon);
 				cout << "type 1" << endl;
 			}
