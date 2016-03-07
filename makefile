@@ -1,6 +1,6 @@
 COMPILE = g++
 FLAGS = -g -Wall -Werror -ansi -pedantic
-SOURCES = assgn02.cpp
+SOURCES = src/assgn02.cpp
 
 all:
     mkdir -p bin
