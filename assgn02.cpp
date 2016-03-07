@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #pragma GCC disgnostic ignored "-Wwrite-strings"
 
 using namespace std;
@@ -104,7 +105,7 @@ class Test: public Items
          flag = f;
          path = p;
      }
-     
+     int truesNeeded() { return 0; } 
      bool execute()
      {
          struct stat checkFile;
@@ -287,14 +288,14 @@ class Failure: public Connector
 
 class Grouping: public Items
 {
-	protected:
-	 vector<Items*> comGroup;
 	public:
+	 vector<Items*> comGroup;
 	 Grouping(){};
 	 int truesNeeded() { return 0; }
 
-	 void add_com(Items* temp)
+	 void addGroupcom(Items* temp)
 	 {
+		cout << "here?" << endl;
 		comGroup.push_back(temp);
 	 }
 
@@ -302,9 +303,10 @@ class Grouping: public Items
 
 	 void parse(istringstream &inStream)
 	 {
+		cout << "parsing group" << endl;
 		string temp;
-		bool grouping = false;
 		bool pendingGroup = false;
+		Items* groupCom;
 		while (!inStream.eof() )//This is where the main parsing takes place
 		{
 			Items* complCom;
@@ -312,24 +314,23 @@ class Grouping: public Items
 			bool detectCon = false;
 			bool testCase = false;
 			int testType = 0;
+			bool grouping = false;
 			vector<string> arr;
-			detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
 			while (!detectCon && !inStream.eof() && !grouping)
 			{
 				inStream >> temp;
 				detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
-
-				if (grouping)
-				{
-					Grouping* groupUp;
-					groupUp->parse(inStream);
-					grouping = false;
-					pendingGroup = true;
-					type = 3;
-					complCom = groupUp;
-				}
-
+				cout << temp << endl;
 			}
+			if (grouping)
+			{
+				Grouping* groupUp;
+				groupUp->parse(inStream);
+				pendingGroup = true;
+				type = 3;
+				groupCom = groupUp;
+			}
+
 
 			if (testCase && !pendingGroup)
 			{
@@ -342,23 +343,30 @@ class Grouping: public Items
 				// this will not be needed. testType indicates what type of "test" it will be, 
 				// "-e, -f, or -d", and corresponds to "0, 1, and 2" respectively.
 			}
-			else if (!testCase && !pendingGroup){ complCom = new Command(arr); }
-				
+			else if (!testCase && !pendingGroup){ cout << "maybe here?" << endl; complCom = new Command(arr); }
+			else if (grouping) { complCom = groupCom; }
+			cout << "made it out?" << endl;
+
 
 			if (type == 0 || type == -1) 
 			{
 				Items* complCon = new Always(complCom);
-				this->add_com(complCon);
+				this->addGroupcom(complCon);
+				cout << "type 0" << endl;
 			}
 			else if (type == 2) 
 			{
 				Items* complCon = new Failure(complCom);
-				this->add_com(complCon);
+				this->addGroupcom(complCon);
+				cout << "type 2" << endl;
 			}
 			else if (type == 1) 
 			{
+				cout << "poop" << endl;
 				Items* complCon = new Success(complCom);
-				this->add_com(complCon);
+				cout << "pop" << endl;
+				comGroup.push_back(complCon);
+				cout << "type 1" << endl;
 			}
 
 			if (this->size() >= 2) { return;}
@@ -407,13 +415,15 @@ class CommandList: public Items
 
 	 void parse_commLine(string commandLine)
 	 {
+		cout << "parsing command line" << endl;
 		string temp;
-		bool grouping = false;
 		bool pendingGroup = false;
+		Items* groupCom;
 		for (istringstream sStreamIn(commandLine); sStreamIn >> temp; )//This is where the main parsing takes place
 		{
 			Items* complCom;
 			int type = 0;
+			bool grouping = false;
 			bool detectCon = false;
 			bool testCase = false;
 			int testType = 0;
@@ -423,17 +433,16 @@ class CommandList: public Items
 			{
 				sStreamIn >> temp;
 				detectCon = interpret_line(arr, temp, type, testCase, testType, grouping);
-
+				cout << temp << endl;
+			}
+			
 			if (grouping)
 			{
 				Grouping* groupUp;
 				groupUp->parse(sStreamIn);
-				grouping = false;
 				pendingGroup = true;
 				type = 3;
-				complCom = groupUp;
-			}
-
+				groupCom = groupUp;
 			}
 
 			if (testCase && !pendingGroup)
@@ -448,22 +457,26 @@ class CommandList: public Items
 				// "-e, -f, or -d", and corresponds to "0, 1, and 2" respectively.
 			}
 			else if (!testCase && !pendingGroup){ complCom = new Command(arr); }
+			else if (pendingGroup) { complCom = groupCom; }
 				
 
 			if (type == 0 || type == -1) 
 			{
 				Items* complCon = new Always(complCom);
 				this->add_com(complCon);
+				cout << "type 0" << endl;
 			}
 			else if (type == 2) 
 			{
 				Items* complCon = new Failure(complCom);
 				this->add_com(complCon);
+				cout << "type 2" << endl;
 			}
 			else if (type == 1) 
 			{
 				Items* complCon = new Success(complCom);
 				this->add_com(complCon);
+				cout << "type 1" << endl;
 			}
 		}
 		
